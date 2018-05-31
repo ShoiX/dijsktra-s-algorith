@@ -4,14 +4,14 @@
 #include <string.h>
 #include <sstream>
 #include <stdlib.h>
-#define LIMIT 1000
+#define LIMIT 500
 using namespace std;
 
 class vertex
 {
 public:
-	int label;
-	vector <vertex*> outward;	// lists of adjacent vertices
+	int label = 0;
+	vector <int> outward;	// lists of adjacent vertices
 	vector <int> weights; // lists of weights of corresponding adjacent vertex
 
 	vertex()
@@ -29,7 +29,8 @@ void gen_dump(vector<vertex> &vertices)
 		cout<<"Vertex "<<vertices[i].label<<endl;
 		for (int k = 0, l = vertices[i].outward.size(); k < l; k++)
 		{
-			cout<<vertices[i].outward[k]->label<<"-"<<vertices[i].weights[k]<<" ";
+
+			cout<<vertices[vertices[i].outward[k]].label<<"-"<<vertices[i].weights[k]<<" ";
 		}
 		cout<<endl;
 	}
@@ -91,7 +92,7 @@ int main(int argc, char* argv[])
 				vertices.resize(adj);
 				n = adj;
 			}
-			vertices[current - 1].outward.push_back(&vertices[adj - 1]);
+			vertices[current - 1].outward.push_back(adj- 1);
 			vertices[current - 1].weights.push_back(wt);
 
 			// set the label
