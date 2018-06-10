@@ -11,11 +11,12 @@ using namespace std;
 class vertex
 {
 public:
+	int dist = INFINITY;	// min-distance to a specific vertex 
+	bool conquered = false;
 	int label = 0;
 	int index;	//index in the list of vertices
 	vector <int> outward;	// lists of index of adjacent vertices
 	vector <int> weights; // lists of weights of corresponding adjacent vertex
-
 	vertex()
 	{
 		this->outward.reserve(LIMIT / 4);
@@ -39,25 +40,24 @@ public:
 		nodes.reserve(n - 1);
 	}
 
-	int insert(vertex* v, int greedy_score)
+	int insert(vertex* v, int greedy_score, int map[])
 	{
 		// insert vertex and the weight
 		node tmp;
 		tmp.ref = v;
 		tmp.score = greedy_score;
-		nodes.push_back(tmp);
+		this->nodes.push_back(tmp);
+		map[v->index] = this->nodes.size();
 
-		int pos = nodes.size() - 1;
+		int pos = this->nodes.size() - 1;
 		// bubble up
-		while(nodes.size() > 1)
+		while(pos != 0)
 		{
 			int parent = (pos - 1) / 2;
-			if (nodes[pos] < nodes[parent])
+			if (this->nodes[pos].score < this->nodes[parent].score)
 			{
 				// swap
-				tmp = nodes[parent];
-				nodes[parent] = nodes[pos];
-				nodes[pos] = tmp;
+				swap(pos, parent, map);
 				pos = parent;
 			}
 			else
@@ -65,13 +65,79 @@ public:
 		}
 		return pos + 1;
 	}
-	int replace(vertex* v, int score, int pos)
+	int replace(vertex* v, int greedy_score, int pos, int map[])
 	{
+		if (pos > this->nodes.size() - 1)
+			return 0;
+		this->nodes[pos].ref = v;
+		this->nodes[pos].score = greedy_score;
+		
 		while(pos != 0)
 		{
-			
+			int parent = (pos - 1) / 2;
+			if (this->nodes[pos].score < this->nodes[parent].score)
+			{
+				swap(pos, parent, map);
+				pos = parent;
+			}
+			else
+				break;
 		}
 		return pos + 1;
+	}
+	// extracts the root node and returns the address of the last
+	vertex* extract(int map[])
+	{
+		if (this->nodes.size() < 1)
+			return NULL;
+		// swap the root and the tail
+		node head = this->nodes[0];
+		swap(0, this->nodes.size() - 1, map);
+		this->nodes.pop_back();
+
+		int pos = 0;
+		int nsize = this->nodes.size();
+
+		// bubble down
+		while (pos < nsize - 1)
+		{
+			int  left 	= (pos * 2) + 1;
+			int  right = (pos * 2) + 2;
+			if (left > nsize - 1)
+				break;
+			else if (this->nodes[left].score < this->nodes[pos].score)
+			{
+				swap(left, pos, map);
+				pos = left;
+				continue;
+			}
+			if (right > nsize - 1)
+				break;
+			else if (this->nodes[right].score < this->nodes[pos].score)
+			{
+				swap(right, pos, map);
+				pos = right;
+				continue;
+			}
+			break;
+		}
+
+		// set the dijkstra score of min
+		head.ref->dist = head.score;
+		return head.ref;
+	}
+private:
+	void swap(int a, int b, int map[])
+	{
+		// swap entries on the mapping
+		map[this->nodes[a].ref->index] = b + 1;
+		map[this->nodes[b].ref->index] = a + 1;
+		node tmp = this->nodes[a];
+		this->nodes[a] = this->nodes[b];
+		this->nodes[b] = tmp;
+
+
+		return;
 	}
 };
 
@@ -88,6 +154,15 @@ void gen_dump(vector<vertex> &vertices)
 		cout<<endl;
 	}
 }
+
+void dist_dump(vector<vertex> &vertices)
+{
+	for (int i = 0, j = vertices.size(); i < j; i++)
+	{
+		cout<<"Vertex "<<vertices[i].label<<": "<<vertices[i].dist<<endl;
+	}
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -162,43 +237,50 @@ int main(int argc, char* argv[])
 		return 3;
 	}
 	/* MAIN DIJKSTRA SUBROUTINE */
-	int scores[n] = {0};	// dijkstra score of every vertex
 	vertex* last = 	&vertices[source - 1];	// last added vertex to the conquered territory
+	last->conquered = true;
+	last->dist = 0;
 
 	// mapping of every vertex and their location in the min-heap (0 if non-existant in heap, not zero indexed)
 	int map[n] = {0};
 	heap minheap(n);
 	// min-heap data structure
-	for (int i =0; i < 1; i++)
+	while (1)
 	{
 		// iterate over the adjacent vertices of last added and add them to the heap
 		for (int j = 0, k = last->outward.size(); j < k; j++)
 		{
+			if (vertices[last->outward[j]].conquered)
+				continue;
 			// not existing in heap
 			if (!map[last->outward[j]])
 			{
-				map[last->outward[j]] = minheap.insert(&vertices[last->outward[j]], scores[last->index] + last->weights[j]);
+				minheap.insert(&vertices[last->outward[j]], last->dist + last->weights[j], map);
 			}
 			// else compare score in heap vs current dijkstra score
 			else
 			{
 				// existing score
 				int existing = minheap.nodes[map[last->outward[j]] - 1].score;
-				if (scores[last->index] + last.weights[j] < existing)
+				if (last->dist + last->weights[j] < existing)
 				{
-					map[last->outward[j]] = minheap.replace(&vertices[last->outward[j]], scores[last->index] + last.weights[j], map[last->outward[j]] - 1);
+					minheap.replace(&vertices[last->outward[j]], last->dist + last->weights[j], map[last->outward[j]] - 1, map);
 				}
 			}
 		}
-
 		// extraction of the min-heap head and set the dijkstra score
+		last = minheap.extract(map);
+		if (last == NULL)
+			break;
+		last->conquered = true;
 	}
 	
-	if (argc == 3)
+	if (argc > 3)
 	{
 		switch(atoi(argv[3]))
 		{
 			case 1: gen_dump(vertices);
+			case 2: dist_dump(vertices);
 		}
 	}
 }
