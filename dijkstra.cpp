@@ -13,7 +13,7 @@ class vertex
 public:
 	int label = 0;
 	int index;	//index in the list of vertices
-	vector <int> outward;	// lists of adjacent vertices
+	vector <int> outward;	// lists of index of adjacent vertices
 	vector <int> weights; // lists of weights of corresponding adjacent vertex
 
 	vertex()
@@ -23,13 +23,57 @@ public:
 	}
 
 };
-
-// nodes that will be used in the min-heap
 typedef struct node
 {
-	int score = INFINITY;		// dijkstra greedy score
-	vertex* ref = NULL;	// vertex the node is referencing	
+	int score;
+	vertex* ref;
 }node;
+
+// the heap data structure
+class heap
+{
+public:
+	vector<node> nodes;
+	heap(int n)
+	{
+		nodes.reserve(n - 1);
+	}
+
+	int insert(vertex* v, int greedy_score)
+	{
+		// insert vertex and the weight
+		node tmp;
+		tmp.ref = v;
+		tmp.score = greedy_score;
+		nodes.push_back(tmp);
+
+		int pos = nodes.size() - 1;
+		// bubble up
+		while(nodes.size() > 1)
+		{
+			int parent = (pos - 1) / 2;
+			if (nodes[pos] < nodes[parent])
+			{
+				// swap
+				tmp = nodes[parent];
+				nodes[parent] = nodes[pos];
+				nodes[pos] = tmp;
+				pos = parent;
+			}
+			else
+				break;
+		}
+		return pos + 1;
+	}
+	int replace(vertex* v, int score, int pos)
+	{
+		while(pos != 0)
+		{
+			
+		}
+		return pos + 1;
+	}
+};
 
 void gen_dump(vector<vertex> &vertices)
 {
@@ -62,6 +106,7 @@ int main(int argc, char* argv[])
 		return 2;
 	}
 	int source = atoi(argv[2]);
+
 	std::vector<vertex> vertices;
 
 	/* LOAD SUBROUTINE */
@@ -111,28 +156,42 @@ int main(int argc, char* argv[])
 		}
 
 	}
-
+	if (source < 1 || source > n)
+	{
+		cout<<"Invalid source vertex\n";
+		return 3;
+	}
 	/* MAIN DIJKSTRA SUBROUTINE */
 	int scores[n] = {0};	// dijkstra score of every vertex
 	vertex* last = 	&vertices[source - 1];	// last added vertex to the conquered territory
 
-	// mapping of every vertex and their location in the min-heap (0 if non-existant in)
+	// mapping of every vertex and their location in the min-heap (0 if non-existant in heap, not zero indexed)
 	int map[n] = {0};
-	vector<node> heap;
-	heap.reserve(n);
+	heap minheap(n);
 	// min-heap data structure
-	for (int i = 1; i < n; i++)
+	for (int i =0; i < 1; i++)
 	{
 		// iterate over the adjacent vertices of last added and add them to the heap
 		for (int j = 0, k = last->outward.size(); j < k; j++)
 		{
-			vertex* current = &vertices[last->outward[j]];
-			// current vertex is non-existant on the heap
-			if (!map[current->index])
+			// not existing in heap
+			if (!map[last->outward[j]])
 			{
-				heap_insert();
+				map[last->outward[j]] = minheap.insert(&vertices[last->outward[j]], scores[last->index] + last->weights[j]);
+			}
+			// else compare score in heap vs current dijkstra score
+			else
+			{
+				// existing score
+				int existing = minheap.nodes[map[last->outward[j]] - 1].score;
+				if (scores[last->index] + last.weights[j] < existing)
+				{
+					map[last->outward[j]] = minheap.replace(&vertices[last->outward[j]], scores[last->index] + last.weights[j], map[last->outward[j]] - 1);
+				}
 			}
 		}
+
+		// extraction of the min-heap head and set the dijkstra score
 	}
 	
 	if (argc == 3)
