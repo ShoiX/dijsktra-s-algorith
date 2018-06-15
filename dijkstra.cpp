@@ -5,7 +5,7 @@
 #include <sstream>
 #include <stdlib.h>
 #define LIMIT 500
-#define INFINITY 99999999
+#define INFINITY 1000000
 using namespace std;
 
 class vertex
@@ -101,25 +101,18 @@ public:
 		// bubble down
 		while (pos < nsize - 1)
 		{
-			int  left 	= (pos * 2) + 1;
-			int  right = (pos * 2) + 2;
-			if (left > nsize - 1)
-				break;
-			else if (this->nodes[left].score < this->nodes[pos].score)
+			int  left 	= (pos * 2) + 1	> nsize - 1	?	pos	:	(pos * 2) + 1;
+			int  right = (pos * 2) + 2 > nsize - 1	?	pos	:	(pos * 2) + 2;
+
+			// index of the minimum score
+			int min = this->nodes[left].score < this->nodes[right].score	?	left	:	right;
+			if (min != pos && this->nodes[min].score < this->nodes[pos].score)
 			{
-				swap(left, pos, map);
-				pos = left;
-				continue;
+				swap(min, pos, map);
+				pos = min;
 			}
-			if (right > nsize - 1)
+			else
 				break;
-			else if (this->nodes[right].score < this->nodes[pos].score)
-			{
-				swap(right, pos, map);
-				pos = right;
-				continue;
-			}
-			break;
 		}
 
 		// set the dijkstra score of min
@@ -161,6 +154,19 @@ void dist_dump(vector<vertex> &vertices)
 	{
 		cout<<"Vertex "<<vertices[i].label<<": "<<vertices[i].dist<<endl;
 	}
+}
+
+void report(vector<vertex> &vertices)
+{
+	int arr[] = {7,37,59,82,99,115,133,165,188,197};
+	int s = 10;
+	for (int i = 0; i < s; i++)
+	{
+		cout<<vertices[arr[i] - 1].dist;
+		if (i < s-1)
+			cout<<", ";
+	}
+	cout<<endl;
 }
 
 
@@ -251,7 +257,7 @@ int main(int argc, char* argv[])
 		for (int j = 0, k = last->outward.size(); j < k; j++)
 		{
 			if (vertices[last->outward[j]].conquered)
-				continue;
+				continue;	
 			// not existing in heap
 			if (!map[last->outward[j]])
 			{
@@ -281,6 +287,7 @@ int main(int argc, char* argv[])
 		{
 			case 1: gen_dump(vertices);
 			case 2: dist_dump(vertices);
+			case 3: report(vertices);
 		}
 	}
 }
